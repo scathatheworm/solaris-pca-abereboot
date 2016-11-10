@@ -1,0 +1,23 @@
+galaxy_info:
+  author: David Ponessa
+  description: Role for automated solaris patching (ZFS root, ABE, PCA)
+  company:
+
+  license: GPLv2
+
+  min_ansible_version: 2.1
+
+  platforms:
+  - name: Solaris
+    versions:
+    - 10
+
+  galaxy_tags:
+    - system
+    - security
+    - common
+    - server
+    - solaris
+
+dependencies:
+  - solaris-pca-patching
