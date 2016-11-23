@@ -19,5 +19,4 @@ galaxy_info:
     - server
     - solaris
 
-dependencies:
-  - scathatheworm.solaris-pca-patching
+dependencies: []
