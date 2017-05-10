@@ -7,13 +7,73 @@
   - ansible_container is not defined
   tags: activate
 
+- name: Shutdown all local zones
+  shell: for i in `/usr/sbin/zoneadm list | /usr/bin/grep -v global` ; do /usr/sbin/zoneadm -z $i halt ; done
+  register: zones
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+  - zones.stdout != ""
+
+- name: Disable mounting of nested filesystems to allow clean Live Upgrade activation post reboot
+  shell: /usr/sbin/zfs set canmount=off {{item}}
+  with_items: "{{ ansible_local.nestedfs.filesystems }}"
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+  - ansible_local.nestedfs.filesystems is defined
+
 - name: Activate patched ABE
   shell: /usr/sbin/luactivate {{ ansible_local.pca.abe.pending }}
   register: activated
   changed_when: "activated.stdout != 'WARNING: Boot environment <{{ ansible_local.pca.abe.pending }}> is already activated.'"
-  notify: reboot sequence
   when:
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
   tags: activate
+
+- name: reboot system
+  command: /usr/sbin/shutdown -y -g5 -i6 "Ansible initiated reboot to activate patched ABE {{ ansible_local.pca.abe.pending }}"
+  ignore_errors: true
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+
+- name: waiting for server to come back
+  local_action: wait_for host={{ inventory_hostname }} state=started delay=1800 timeout=1200 search_regex=SSH port={{ ansible_ssh_port }}
+  become: false
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+
+- name: wait for init sequence to finish
+  wait_for: "state=present delay=300 timeout=1200 path=/var/svc/log/milestone-multi-user:default.log search_regex='Method .start. exited with status 0'"
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+
+- name: Restore lofs mountpoints
+  shell: mv {{ item }}.anspca {{ item}}
+  with_items: "{{ ansible_local.lofsmounts.configfile }}"
+  notify: rebootzones
+  when: 
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+  - ansible_local.lofsmounts.configfile is defined
+
+- name: Enable nested filesystems
+  shell: /usr/sbin/zfs set canmount=on {{item}}
+  with_items: "{{ ansible_local.nestedfs.filesystems }}"
+  notify: rebootzones
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+  - ansible_local.nestedfs.filesystems is defined
