@@ -7,22 +7,14 @@
   - ansible_container is not defined
   tags: activate
 
-- name: Shutdown all local zones
-  shell: for i in `/usr/sbin/zoneadm list | /usr/bin/grep -v global` ; do /usr/sbin/zoneadm -z $i halt ; done
-  register: zones
-  when:
-  - ansible_os_family == 'Solaris'
-  - ansible_distribution_version == '10'
-  - ansible_container is not defined
-  - zones.stdout != ""
-
-- name: Disable mounting of nested filesystems to allow clean Live Upgrade activation post reboot
-  shell: /usr/sbin/zfs set canmount=off {{item}}
+- name: Disable automounting of nested filesystems to allow clean Live Upgrade activation post reboot
+  shell: /usr/sbin/zfs set canmount=noauto {{item}}
   with_items: "{{ ansible_local.nestedfs.filesystems }}"
   when:
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
+  - ansible_local.nestedfs is defined
   - ansible_local.nestedfs.filesystems is defined
 
 - name: Activate patched ABE
@@ -43,16 +35,24 @@
   - ansible_distribution_version == '10'
   - ansible_container is not defined
 
+- name: Wait for server to stop listening for connections
+  wait_for: host={{ inventory_hostname }} state=stopped connect_timeout=3 timeout=2700 port={{ ansible_ssh_port }}
+  delegate_to: localhost
+  when:
+  - ansible_os_family == 'Solaris'
+  - ansible_distribution_version == '10'
+  - ansible_container is not defined
+
 - name: waiting for server to come back
-  local_action: wait_for host={{ inventory_hostname }} state=started delay=1800 timeout=1200 search_regex=SSH port={{ ansible_ssh_port }}
-  become: false
+  wait_for: host={{ inventory_hostname }} state=started delay=300 timeout=2700 search_regex=SSH port={{ ansible_ssh_port }}
+  delegate_to: localhost
   when:
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
 
 - name: wait for init sequence to finish
-  wait_for: "state=present delay=300 timeout=1200 path=/var/svc/log/milestone-multi-user:default.log search_regex='Method .start. exited with status 0'"
+  wait_for: "state=present delay=300 timeout=2100 path=/var/svc/log/milestone-multi-user-server:default.log search_regex='Method .start. exited with status 0'"
   when:
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
@@ -66,6 +66,7 @@
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
+  - ansible_local.lofsmounts is defined
   - ansible_local.lofsmounts.configfile is defined
 
 - name: Enable nested filesystems
@@ -76,4 +77,5 @@
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
+  - ansible_local.nestedfs is defined
   - ansible_local.nestedfs.filesystems is defined

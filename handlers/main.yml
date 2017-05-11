@@ -2,5 +2,3 @@
 # handlers file for solaris-pca-patching
 - name: rebootzones
   shell: for i in `/usr/sbin/zoneadm list -cvi | /usr/bin/grep -v global | /usr/bin/awk '$5=="native" && ($3=="running" || $3=="installed") {print $2}'` ; do /usr/sbin/zoneadm -z $i reboot ; done
-  debug:
-    msg: "Rebooting zones for sanity after changes to mointpoints and filesystems"
