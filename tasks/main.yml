@@ -14,6 +14,7 @@
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
+  - ansible_local is defined
   - ansible_local.nestedfs is defined
   - ansible_local.nestedfs.filesystems is defined
 
@@ -66,6 +67,7 @@
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
+  - ansible_local is defined
   - ansible_local.lofsmounts is defined
   - ansible_local.lofsmounts.configfile is defined
 
@@ -77,5 +79,6 @@
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
   - ansible_container is not defined
+  - ansible_local is defined
   - ansible_local.nestedfs is defined
   - ansible_local.nestedfs.filesystems is defined
