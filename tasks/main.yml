@@ -20,8 +20,6 @@
 
 - name: Activate patched ABE
   shell: /usr/sbin/luactivate {{ ansible_local.pca.abe.pending }}
-  register: activated
-  changed_when: "activated.stdout != 'WARNING: Boot environment <{{ ansible_local.pca.abe.pending }}> is already activated.'"
   when:
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
@@ -37,7 +35,7 @@
   - ansible_container is not defined
 
 - name: Wait for server to stop listening for connections
-  wait_for: host={{ inventory_hostname }} state=stopped connect_timeout=3 timeout=2700 port={{ ansible_ssh_port }}
+  wait_for: host={{ inventory_hostname }} state=stopped connect_timeout=3 timeout=2700 port={{ ansible_ssh_port|default(22) }}
   delegate_to: localhost
   when:
   - ansible_os_family == 'Solaris'
@@ -45,7 +43,7 @@
   - ansible_container is not defined
 
 - name: waiting for server to come back
-  wait_for: host={{ inventory_hostname }} state=started delay=300 timeout=2700 search_regex=SSH port={{ ansible_ssh_port }}
+  wait_for: host={{ inventory_hostname }} state=started delay=300 timeout=2700 search_regex=SSH port={{ ansible_ssh_port|default(22) }}
   delegate_to: localhost
   when:
   - ansible_os_family == 'Solaris'
