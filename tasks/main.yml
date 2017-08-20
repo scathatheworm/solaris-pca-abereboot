@@ -29,6 +29,8 @@
 - name: reboot system
   command: /usr/sbin/shutdown -y -g5 -i6 "Ansible initiated reboot to activate patched ABE {{ ansible_local.pca.abe.pending }}"
   ignore_errors: true
+  async: 10
+  poll: 0
   when:
   - ansible_os_family == 'Solaris'
   - ansible_distribution_version == '10'
